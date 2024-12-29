@@ -205,7 +205,7 @@ test "tcc - compile" {
     const tcc = try new();
     defer tcc.deinit();
 
-    tcc.set_options("-std=c11 -nostdlib -Wl,--export-all-symbols -g -O2");
+    tcc.set_options("-std=c11 -nostdlib -Wl,--export-all-symbols");
     tcc.set_output_type(TCC_OUTPUT_MEMORY);
 
     try tcc.compile_string(
