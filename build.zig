@@ -126,7 +126,12 @@ pub fn build(b: *std.Build) !void {
     const module = b.addModule("tinycc", .{
         .root_source_file = b.path("src/lib.zig"),
         .target = target,
-        .optimize = optimize,
+        .optimize = if (os_tag == .macos) switch (optimize) {
+            .Debug => .ReleaseFast,
+            .ReleaseFast => .ReleaseFast,
+            .ReleaseSafe => .ReleaseFast,
+            .ReleaseSmall => .ReleaseSmall,
+        } else optimize,
     });
     module.linkLibrary(lib);
 
@@ -135,7 +140,12 @@ pub fn build(b: *std.Build) !void {
     const unit_tests = b.addTest(.{
         .root_source_file = b.path("src/lib.zig"),
         .target = target,
-        .optimize = optimize,
+        .optimize = if (os_tag == .macos) switch (optimize) {
+            .Debug => .ReleaseFast,
+            .ReleaseFast => .ReleaseFast,
+            .ReleaseSafe => .ReleaseFast,
+            .ReleaseSmall => .ReleaseSmall,
+        } else optimize,
     });
     unit_tests.linkLibrary(lib);
 
