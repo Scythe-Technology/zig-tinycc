@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -6,11 +7,16 @@ pub fn build(b: *std.Build) !void {
 
     const tcc_dep = b.dependency("tinycc", .{});
 
+    const build_native_target: std.Build.ResolvedTarget = .{
+        .query = try std.Target.Query.parse(.{}),
+        .result = builtin.target,
+    };
+
     const c2str_step = b.step("config-tcc", "Generate tccdefs_.h");
     {
         const c2str_exe = b.addExecutable(.{
             .name = "config-tcc",
-            .target = target,
+            .target = build_native_target,
             .optimize = .Debug,
         });
 
@@ -51,6 +57,10 @@ pub fn build(b: *std.Build) !void {
 
     var FLAGS = std.ArrayList([]const u8).init(b.allocator);
     var C_SOURCES = std.ArrayList(std.Build.LazyPath).init(b.allocator);
+
+    try FLAGS.append("-Wall");
+    try FLAGS.append("-fno-strict-aliasing");
+    try FLAGS.append("-O3");
 
     try FLAGS.append("-DCONFIG_TCC_PREDEFS");
     try FLAGS.append("-DONE_SOURCE=0");
