@@ -39,7 +39,7 @@ pub const DynMem = struct {
     pub fn alloc(allocator: std.mem.Allocator, size: usize) !DynMem {
         const mem = try allocator.alignedAlloc(u8, std.mem.page_size, size);
         return .{
-            .allocator = std.testing.allocator,
+            .allocator = allocator,
             .mem = mem,
         };
     }
