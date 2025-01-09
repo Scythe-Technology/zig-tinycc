@@ -32,6 +32,24 @@ pub fn new() !*TCCState {
     return tcc_new() orelse error.TCCNewError;
 }
 
+pub const DynMem = struct {
+    allocator: std.mem.Allocator,
+    mem: []align(std.mem.page_size) u8,
+
+    pub fn alloc(allocator: std.mem.Allocator, size: usize) !DynMem {
+        const mem = try allocator.alignedAlloc(u8, std.mem.page_size, size);
+        return .{
+            .allocator = std.testing.allocator,
+            .mem = mem,
+        };
+    }
+
+    pub fn free(self: DynMem) void {
+        std.posix.mprotect(self.mem, std.posix.PROT.READ | std.posix.PROT.WRITE) catch {};
+        self.allocator.free(self.mem);
+    }
+};
+
 pub const TCCState = opaque {
     /// set CONFIG_TCCDIR at runtime
     pub fn set_lib_path(self: *TCCState, path: [:0]const u8) void {
@@ -158,15 +176,15 @@ pub const TCCState = opaque {
         tcc_list_symbols(self, ctx, symbol_cb);
     }
 
-    pub fn relocateAlloc(self: *TCCState, allocator: std.mem.Allocator) ![]u8 {
+    pub fn relocateAlloc(self: *TCCState, allocator: std.mem.Allocator) !DynMem {
         const bytes = try self.relocationSize();
-        const ptr = try allocator.alloc(u8, @intCast(bytes));
-        errdefer allocator.free(ptr);
-        try self.relocate(.{ .addr = @ptrCast(@alignCast(ptr.ptr)) });
-        return ptr;
+        const mem = try DynMem.alloc(allocator, @intCast(bytes));
+        errdefer mem.free();
+        try self.relocate(.{ .addr = @ptrCast(@alignCast(mem.mem.ptr)) });
+        return mem;
     }
 
-    pub fn compileStringOnceAlloc(self: *TCCState, allocator: std.mem.Allocator, buf: []const u8) ![]u8 {
+    pub fn compileStringOnceAlloc(self: *TCCState, allocator: std.mem.Allocator, buf: []const u8) !DynMem {
         const zbytes = try allocator.dupeZ(u8, buf);
         defer allocator.free(zbytes);
         try self.compile_string(zbytes);
@@ -239,7 +257,7 @@ test "tcc - compileStringOnceAlloc" {
         \\  return 234;
         \\}
     );
-    defer allocator.free(mem);
+    defer mem.free();
 
     const Fn = *const fn () callconv(.c) c_int;
 
