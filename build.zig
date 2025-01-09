@@ -37,12 +37,7 @@ pub fn build(b: *std.Build) !void {
     const lib = b.addStaticLibrary(.{
         .name = "libtinycc",
         .target = target,
-        .optimize = switch (optimize) { // does not work with .Debug or .ReleaseSafe
-            .Debug => .ReleaseFast,
-            .ReleaseFast => .ReleaseFast,
-            .ReleaseSafe => .ReleaseFast,
-            .ReleaseSmall => .ReleaseSmall,
-        },
+        .optimize = optimize,
     });
     lib.linkLibC();
     lib.addIncludePath(b.path("src/config"));
@@ -56,14 +51,16 @@ pub fn build(b: *std.Build) !void {
     const os_tag = target.result.os.tag;
 
     var FLAGS = std.ArrayList([]const u8).init(b.allocator);
-    var C_SOURCES = std.ArrayList(std.Build.LazyPath).init(b.allocator);
+    var C_SOURCES = std.ArrayList([]const u8).init(b.allocator);
 
     try FLAGS.append("-Wall");
     try FLAGS.append("-fno-strict-aliasing");
+    try FLAGS.append("-fno-sanitize=undefined");
     try FLAGS.append("-O3");
 
     try FLAGS.append("-DCONFIG_TCC_PREDEFS");
     try FLAGS.append("-DONE_SOURCE=0");
+    try FLAGS.append("-DMEM_DEBUG=2");
     try FLAGS.append("-DTCC_LIBTCC1=\"\\0\"");
 
     if (!(b.option(bool, "CONFIG_TCC_BCHECK", "compile with built-in memory and bounds checker (implies -g)") orelse true))
@@ -73,26 +70,24 @@ pub fn build(b: *std.Build) !void {
         try FLAGS.append("-DCONFIG_TCC_BACKTRACE=0");
 
     for (SOURCES) |file|
-        try C_SOURCES.append(tcc_dep.path(file));
-
-    try C_SOURCES.append(b.path("src/patch/tccrun.c"));
+        try C_SOURCES.append(file);
 
     switch (cpu_arch) {
         .x86_64 => {
             for (X86_64_SOURCES) |file|
-                try C_SOURCES.append(tcc_dep.path(file));
+                try C_SOURCES.append(file);
         },
         .arm => {
             for (ARM_SOURCES) |file|
-                try C_SOURCES.append(tcc_dep.path(file));
+                try C_SOURCES.append(file);
         },
         .aarch64 => {
             for (AARCH64_SOURCES) |file|
-                try C_SOURCES.append(tcc_dep.path(file));
+                try C_SOURCES.append(file);
         },
         .riscv64 => {
             for (RISCV64_SOURCES) |file|
-                try C_SOURCES.append(tcc_dep.path(file));
+                try C_SOURCES.append(file);
         },
         else => @panic("Unsupported CPU architecture"),
     }
@@ -100,11 +95,11 @@ pub fn build(b: *std.Build) !void {
     switch (os_tag) {
         .windows => {
             for (WINDOWS_SOURCES) |file|
-                try C_SOURCES.append(tcc_dep.path(file));
+                try C_SOURCES.append(file);
         },
         .macos => {
             for (MACOS_SOURCES) |file|
-                try C_SOURCES.append(tcc_dep.path(file));
+                try C_SOURCES.append(file);
         },
         .linux => {},
         else => @panic("Unsupported OS"),
@@ -136,18 +131,17 @@ pub fn build(b: *std.Build) !void {
         else => unreachable,
     }
 
-    for (C_SOURCES.items) |path|
-        lib.addCSourceFile(.{ .file = path, .flags = FLAGS.items });
+    lib.addCSourceFiles(.{
+        .root = tcc_dep.path(""),
+        .files = C_SOURCES.items,
+        .flags = FLAGS.items,
+    });
+    lib.addCSourceFile(.{ .file = b.path("src/patch/tccrun.c"), .flags = FLAGS.items });
 
     const module = b.addModule("tinycc", .{
         .root_source_file = b.path("src/lib.zig"),
         .target = target,
-        .optimize = if (os_tag == .macos) switch (optimize) {
-            .Debug => .ReleaseFast,
-            .ReleaseFast => .ReleaseFast,
-            .ReleaseSafe => .ReleaseFast,
-            .ReleaseSmall => .ReleaseSmall,
-        } else optimize,
+        .optimize = optimize,
     });
     module.linkLibrary(lib);
 
@@ -156,12 +150,7 @@ pub fn build(b: *std.Build) !void {
     const unit_tests = b.addTest(.{
         .root_source_file = b.path("src/lib.zig"),
         .target = target,
-        .optimize = if (os_tag == .macos) switch (optimize) {
-            .Debug => .ReleaseFast,
-            .ReleaseFast => .ReleaseFast,
-            .ReleaseSafe => .ReleaseFast,
-            .ReleaseSmall => .ReleaseSmall,
-        } else optimize,
+        .optimize = optimize,
     });
     unit_tests.linkLibrary(lib);
 
