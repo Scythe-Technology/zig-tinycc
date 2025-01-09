@@ -60,7 +60,6 @@ pub fn build(b: *std.Build) !void {
 
     try FLAGS.append("-DCONFIG_TCC_PREDEFS");
     try FLAGS.append("-DONE_SOURCE=0");
-    try FLAGS.append("-DMEM_DEBUG=2");
     try FLAGS.append("-DTCC_LIBTCC1=\"\\0\"");
 
     if (!(b.option(bool, "CONFIG_TCC_BCHECK", "compile with built-in memory and bounds checker (implies -g)") orelse true))
@@ -68,6 +67,9 @@ pub fn build(b: *std.Build) !void {
 
     if (!(b.option(bool, "CONFIG_TCC_BACKTRACE", "link with backtrace (stack dump) support [show max N callers]") orelse true))
         try FLAGS.append("-DCONFIG_TCC_BACKTRACE=0");
+
+    if (b.option(bool, "CONFIG_MEM_DEBUG", "compile with MEM_DEBUG flag defined for tcc") orelse false)
+        try FLAGS.append("-DMEM_DEBUG=2");
 
     for (SOURCES) |file|
         try C_SOURCES.append(file);
