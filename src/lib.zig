@@ -32,12 +32,14 @@ pub fn new() !*TCCState {
     return tcc_new() orelse error.TCCNewError;
 }
 
+const page_size = std.heap.pageSize();
+
 pub const DynMem = struct {
     allocator: std.mem.Allocator,
-    mem: []align(std.mem.page_size) u8,
+    mem: []align(page_size) u8,
 
     pub fn alloc(allocator: std.mem.Allocator, size: usize) !DynMem {
-        const mem = try allocator.alignedAlloc(u8, std.mem.page_size, size);
+        const mem = try allocator.alignedAlloc(u8, page_size, size);
         return .{
             .allocator = allocator,
             .mem = mem,
