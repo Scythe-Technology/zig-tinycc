@@ -32,7 +32,7 @@ pub fn new() !*TCCState {
     return tcc_new() orelse error.TCCNewError;
 }
 
-const page_size = std.heap.pageSize();
+const page_size = std.heap.page_size_min;
 
 pub const DynMem = struct {
     allocator: std.mem.Allocator,
