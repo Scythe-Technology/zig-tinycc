@@ -1,10 +1,10 @@
 .{
-    .name = "tinycc",
+    .name = .tinycc,
     .version = "0.0.1",
     .dependencies = .{
         .tinycc = .{
             .url = "https://codeload.github.com/TinyCC/tinycc/tar.gz/c6afdff7ab4dfd338a30f6aab3288e3a2d6274de",
-            .hash = "1220adf4f39b8eacd63b644b547a0be8b327cc9add6288be4f9d8e06355f427a2171",
+            .hash = "N-V-__8AAPoeQACt9PObjqzWO2RLVHoL6LMnzJrdYoi-T52O",
         },
     },
     .paths = .{
@@ -13,6 +13,8 @@
         "src",
         "config",
         "LICENSE",
+        "TINYCC-LICENSE",
         "README.md",
     },
+    .fingerprint = 0xafe12021f354a74f,
 }
