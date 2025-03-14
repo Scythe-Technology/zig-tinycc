@@ -7,6 +7,11 @@ pub fn build(b: *std.Build) !void {
 
     const no_fail = b.option(bool, "no_fail", "Ignore build panic") orelse false;
 
+    // TinyCC options
+    const CONFIG_TCC_BCHECK = b.option(bool, "CONFIG_TCC_BCHECK", "compile with built-in memory and bounds checker (implies -g)") orelse true;
+    const CONFIG_TCC_BACKTRACE = b.option(bool, "CONFIG_TCC_BACKTRACE", "link with backtrace (stack dump) support [show max N callers]") orelse true;
+    const CONFIG_MEM_DEBUG = b.option(bool, "CONFIG_MEM_DEBUG", "compile with MEM_DEBUG flag defined for tcc") orelse false;
+
     switch (target.result.os.tag) {
         .windows, .macos, .linux => {},
         else => if (no_fail) return else @panic("Unsupported OS"),
@@ -73,13 +78,11 @@ pub fn build(b: *std.Build) !void {
     try FLAGS.append("-DONE_SOURCE=0");
     try FLAGS.append("-DTCC_LIBTCC1=\"\\0\"");
 
-    if (!(b.option(bool, "CONFIG_TCC_BCHECK", "compile with built-in memory and bounds checker (implies -g)") orelse true))
+    if (!CONFIG_TCC_BCHECK)
         try FLAGS.append("-DCONFIG_TCC_BCHECK=0");
-
-    if (!(b.option(bool, "CONFIG_TCC_BACKTRACE", "link with backtrace (stack dump) support [show max N callers]") orelse true))
+    if (!CONFIG_TCC_BACKTRACE)
         try FLAGS.append("-DCONFIG_TCC_BACKTRACE=0");
-
-    if (b.option(bool, "CONFIG_MEM_DEBUG", "compile with MEM_DEBUG flag defined for tcc") orelse false)
+    if (CONFIG_MEM_DEBUG)
         try FLAGS.append("-DMEM_DEBUG=2");
 
     for (SOURCES) |file|
