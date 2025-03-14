@@ -5,6 +5,17 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const no_fail = b.option(bool, "no_fail", "Ignore build panic") orelse false;
+
+    switch (target.result.os.tag) {
+        .windows, .macos, .linux => {},
+        else => if (no_fail) return else @panic("Unsupported OS"),
+    }
+    switch (target.result.cpu.arch) {
+        .x86_64, .arm, .aarch64, .riscv64 => {},
+        else => if (no_fail) return else @panic("Unsupported CPU architecture"),
+    }
+
     const tcc_dep = b.dependency("tinycc", .{});
 
     const build_native_target: std.Build.ResolvedTarget = .{
@@ -91,7 +102,7 @@ pub fn build(b: *std.Build) !void {
             for (RISCV64_SOURCES) |file|
                 try C_SOURCES.append(file);
         },
-        else => @panic("Unsupported CPU architecture"),
+        else => unreachable,
     }
 
     switch (os_tag) {
@@ -104,7 +115,7 @@ pub fn build(b: *std.Build) !void {
                 try C_SOURCES.append(file);
         },
         .linux => {},
-        else => @panic("Unsupported OS"),
+        else => unreachable,
     }
 
     switch (cpu_arch) {
