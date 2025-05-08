@@ -4,7 +4,7 @@
     .dependencies = .{
         .tinycc = .{
             .url = "https://codeload.github.com/TinyCC/tinycc/tar.gz/6ca228339cbae14203b255e3e27f56586d2b10dc",
-            .hash = "N-V-__8AAPoeQACt9PObjqzWO2RLVHoL6LMnzJrdYoi-T52O",
+            .hash = "N-V-__8AAEJGQAA0ZAst0wi989aQgguE0Xc5CygWHV7Npz1Q",
         },
     },
     .paths = .{
