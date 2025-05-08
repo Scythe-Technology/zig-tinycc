@@ -3,7 +3,7 @@
     .version = "0.0.1",
     .dependencies = .{
         .tinycc = .{
-            .url = "https://codeload.github.com/TinyCC/tinycc/tar.gz/c6afdff7ab4dfd338a30f6aab3288e3a2d6274de",
+            .url = "https://codeload.github.com/TinyCC/tinycc/tar.gz/6ca228339cbae14203b255e3e27f56586d2b10dc",
             .hash = "N-V-__8AAPoeQACt9PObjqzWO2RLVHoL6LMnzJrdYoi-T52O",
         },
     },

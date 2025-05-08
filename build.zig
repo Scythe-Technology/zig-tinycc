@@ -57,7 +57,6 @@ pub fn build(b: *std.Build) !void {
     });
     lib.linkLibC();
     lib.addIncludePath(b.path("src/config"));
-    lib.addIncludePath(b.path("src/patch"));
     lib.addIncludePath(tcc_dep.path("."));
     lib.addIncludePath(tcc_dep.path("include"));
 
@@ -152,7 +151,6 @@ pub fn build(b: *std.Build) !void {
         .files = C_SOURCES.items,
         .flags = FLAGS.items,
     });
-    lib.addCSourceFile(.{ .file = b.path("src/patch/tccrun.c"), .flags = FLAGS.items });
 
     const module = b.addModule("tinycc", .{
         .root_source_file = b.path("src/lib.zig"),
@@ -181,6 +179,7 @@ pub fn build(b: *std.Build) !void {
 const SOURCES = [_][]const u8{
     "libtcc.c",
     "tccpp.c",
+    "tccrun.c",
     "tccgen.c",
     "tccdbg.c",
     "tccelf.c",

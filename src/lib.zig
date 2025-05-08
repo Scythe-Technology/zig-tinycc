@@ -23,7 +23,6 @@ pub extern fn tcc_add_symbol(s: *TCCState, name: [*:0]const u8, val: *const anyo
 pub extern fn tcc_output_file(s: *TCCState, filename: [*:0]const u8) c_int;
 pub extern fn tcc_run(s: *TCCState, argc: c_int, argv: [*c][*c]u8) c_int;
 pub extern fn tcc_relocate(s1: *TCCState) c_int;
-pub extern fn tcc_relocate2(s1: *TCCState, ptr: ?*anyopaque, mode: c_int) c_int;
 pub extern fn tcc_get_symbol(s: *TCCState, name: [*:0]const u8) ?*anyopaque;
 pub extern fn tcc_list_symbols(s: *TCCState, ctx: ?*anyopaque, symbol_cb: TCCSymbolCallbackFunc) void;
 
@@ -151,21 +150,10 @@ pub const TCCState = opaque {
     }
 
     /// do all relocations (needed before using get_symbol())
-    pub fn relocate(self: *TCCState, position: TCCRelocation) !void {
-        const ret = switch (position) {
-            .auto => tcc_relocate(self),
-            .addr => |ptr| tcc_relocate2(self, ptr, 1),
-        };
+    pub fn relocate(self: *TCCState) !void {
+        const ret = tcc_relocate(self);
         if (ret == -1)
             return error.RelocateError;
-    }
-
-    /// return required memory size for relocation
-    pub fn relocationSize(self: *TCCState) !c_int {
-        const size = tcc_relocate2(self, null, 2);
-        if (size == -1)
-            return error.RelocateSizeError;
-        return size;
     }
 
     /// return symbol value or NULL if not found
@@ -178,19 +166,11 @@ pub const TCCState = opaque {
         tcc_list_symbols(self, ctx, symbol_cb);
     }
 
-    pub fn relocateAlloc(self: *TCCState, allocator: std.mem.Allocator) !DynMem {
-        const bytes = try self.relocationSize();
-        const mem = try DynMem.alloc(allocator, @intCast(bytes));
-        errdefer mem.free();
-        try self.relocate(.{ .addr = @ptrCast(@alignCast(mem.mem.ptr)) });
-        return mem;
-    }
-
-    pub fn compileStringOnceAlloc(self: *TCCState, allocator: std.mem.Allocator, buf: []const u8) !DynMem {
+    pub fn compileStringOnce(self: *TCCState, allocator: std.mem.Allocator, buf: []const u8) !void {
         const zbytes = try allocator.dupeZ(u8, buf);
         defer allocator.free(zbytes);
         try self.compile_string(zbytes);
-        return try self.relocateAlloc(allocator);
+        return try self.relocate();
     }
 
     /// free a TCC compilation context
@@ -234,7 +214,7 @@ test "tcc - compile" {
         \\}
     );
 
-    try tcc.relocate(.auto);
+    try tcc.relocate();
 
     const Fn = *const fn () callconv(.c) c_int;
 
@@ -245,7 +225,7 @@ test "tcc - compile" {
     try std.testing.expectEqual(res, 123);
 }
 
-test "tcc - compileStringOnceAlloc" {
+test "tcc - compileStringOnce" {
     const allocator = std.testing.allocator;
 
     const tcc = try new();
@@ -254,12 +234,11 @@ test "tcc - compileStringOnceAlloc" {
     tcc.set_options("-std=c11 -nostdlib -Wl,--export-all-symbols");
     tcc.set_output_type(TCC_OUTPUT_MEMORY);
 
-    const mem = try tcc.compileStringOnceAlloc(allocator,
+    try tcc.compileStringOnce(allocator,
         \\int blank() {
         \\  return 234;
         \\}
     );
-    defer mem.free();
 
     const Fn = *const fn () callconv(.c) c_int;
 
