@@ -1,6 +1,6 @@
 .{
     .name = .tinycc,
-    .version = "0.0.1",
+    .version = "0.0.2",
     .dependencies = .{
         .tinycc = .{
             .url = "https://codeload.github.com/TinyCC/tinycc/tar.gz/6ca228339cbae14203b255e3e27f56586d2b10dc",
