@@ -31,26 +31,6 @@ pub fn new() !*TCCState {
     return tcc_new() orelse error.TCCNewError;
 }
 
-const page_size = std.heap.page_size_min;
-
-pub const DynMem = struct {
-    allocator: std.mem.Allocator,
-    mem: []align(page_size) u8,
-
-    pub fn alloc(allocator: std.mem.Allocator, size: usize) !DynMem {
-        const mem = try allocator.alignedAlloc(u8, page_size, size);
-        return .{
-            .allocator = allocator,
-            .mem = mem,
-        };
-    }
-
-    pub fn free(self: DynMem) void {
-        std.posix.mprotect(self.mem, std.posix.PROT.READ | std.posix.PROT.WRITE) catch {};
-        self.allocator.free(self.mem);
-    }
-};
-
 pub const TCCState = opaque {
     /// set CONFIG_TCCDIR at runtime
     pub fn set_lib_path(self: *TCCState, path: [:0]const u8) void {
