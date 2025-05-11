@@ -18,7 +18,7 @@ jobs:
     - name: Setup Zig
       uses: mlugg/setup-zig@v1
       with:
-        version: 0.14.0-dev.3237+ddff1fa4c
+        version: 0.14.0
         use-cache: false
 
     - name: Run fmt
@@ -41,10 +41,9 @@ jobs:
           - os: macos-14
             name: macOs Arm64
             target: aarch64-macos
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             name: Linux Arm64
             target: aarch64-linux
-            qemu-platform: arm64
           - os: ubuntu-latest
             name: Linux Risc-v64
             target: riscv64-linux
@@ -60,7 +59,7 @@ jobs:
     - name: Setup Zig
       uses: mlugg/setup-zig@v1
       with:
-        version: 0.14.0-dev.3237+ddff1fa4c
+        version: 0.14.0
         use-cache: false
 
     - name: Setup QEMU
