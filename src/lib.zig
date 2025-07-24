@@ -58,13 +58,13 @@ pub const TCCState = opaque {
     }
 
     /// add include path
-    pub fn add_include_path(self: *TCCState, pathname: [:0]const u8) void {
-        tcc_add_include_path(self, pathname.ptr);
+    pub fn add_include_path(self: *TCCState, pathname: [:0]const u8) i32 {
+        return tcc_add_include_path(self, pathname.ptr);
     }
 
     /// add in system include path
-    pub fn add_sysinclude_path(self: *TCCState, pathname: [:0]const u8) void {
-        tcc_add_sysinclude_path(self, pathname.ptr);
+    pub fn add_sysinclude_path(self: *TCCState, pathname: [:0]const u8) i32 {
+        return tcc_add_sysinclude_path(self, pathname.ptr);
     }
 
     /// define preprocessor symbol 'sym'. value can be NULL, sym can be "sym=val"
@@ -84,7 +84,7 @@ pub const TCCState = opaque {
     }
 
     /// add multiple files (C file, dll, object, library, ld script)
-    pub fn add_files(self: *TCCState, filenames: [][:0]const u8) !void {
+    pub fn add_files(self: *TCCState, filenames: []const [:0]const u8) !void {
         for (filenames) |filename|
             try self.add_file(filename.ptr);
     }
@@ -131,8 +131,7 @@ pub const TCCState = opaque {
 
     /// do all relocations (needed before using get_symbol())
     pub fn relocate(self: *TCCState) !void {
-        const ret = tcc_relocate(self);
-        if (ret == -1)
+        if (tcc_relocate(self) == -1)
             return error.RelocateError;
     }
 
