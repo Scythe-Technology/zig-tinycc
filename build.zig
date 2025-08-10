@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) !void {
     const CONFIG_MEM_DEBUG = b.option(bool, "CONFIG_MEM_DEBUG", "compile with MEM_DEBUG flag defined for tcc") orelse false;
 
     switch (target.result.os.tag) {
-        .windows, .macos, .linux => {},
+        .windows, .macos, .linux, .dragonfly, .freebsd, .netbsd, .openbsd => {},
         else => if (no_fail) return else @panic("Unsupported OS"),
     }
     switch (target.result.cpu.arch) {
@@ -32,8 +32,10 @@ pub fn build(b: *std.Build) !void {
     {
         const c2str_exe = b.addExecutable(.{
             .name = "config-tcc",
-            .target = build_native_target,
-            .optimize = .Debug,
+            .root_module = b.createModule(.{
+                .target = build_native_target,
+                .optimize = .Debug,
+            }),
         });
 
         c2str_exe.linkLibC();
@@ -50,10 +52,13 @@ pub fn build(b: *std.Build) !void {
         c2str_step.dependOn(&run_exe.step);
     }
 
-    const lib = b.addStaticLibrary(.{
+    const lib = b.addLibrary(.{
         .name = "libtinycc",
-        .target = target,
-        .optimize = optimize,
+        .linkage = .static,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     lib.linkLibC();
     lib.addIncludePath(b.path("src/config"));
@@ -117,6 +122,7 @@ pub fn build(b: *std.Build) !void {
                 try C_SOURCES.append(file);
         },
         .linux => {},
+        .dragonfly, .freebsd, .netbsd, .openbsd => {},
         else => unreachable,
     }
 
@@ -143,6 +149,10 @@ pub fn build(b: *std.Build) !void {
             if (target.result.abi == .musl)
                 try FLAGS.append("-DCONFIG_TCC_MUSL");
         },
+        .dragonfly => try FLAGS.append("-DTARGETOS_DragonFly"),
+        .freebsd => try FLAGS.append("-DTARGETOS_FreeBSD"),
+        .netbsd => try FLAGS.append("-DTARGETOS_NetBSD"),
+        .openbsd => try FLAGS.append("-DTARGETOS_OpenBSD"),
         else => unreachable,
     }
 
@@ -162,9 +172,11 @@ pub fn build(b: *std.Build) !void {
     b.installArtifact(lib);
 
     const unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/lib.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/lib.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     unit_tests.linkLibrary(lib);
 

@@ -1,7 +1,7 @@
 const std = @import("std");
 
-pub const TCCSymbolCallbackFunc = ?*const fn (?*anyopaque, [*:0]const u8, ?*const anyopaque) callconv(.C) void;
-pub const TCCErrorFunc = ?*const fn (?*anyopaque, [*:0]const u8) callconv(.C) void;
+pub const TCCSymbolCallbackFunc = ?*const fn (?*anyopaque, [*:0]const u8, ?*const anyopaque) callconv(.c) void;
+pub const TCCErrorFunc = ?*const fn (?*anyopaque, [*:0]const u8) callconv(.c) void;
 
 pub extern fn tcc_new() ?*TCCState;
 pub extern fn tcc_delete(s: *TCCState) void;
