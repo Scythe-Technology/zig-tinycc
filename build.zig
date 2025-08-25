@@ -59,6 +59,7 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = optimize,
         }),
+        .use_llvm = true, // fails to link without LLVM
     });
     lib.linkLibC();
     lib.addIncludePath(b.path("src/config"));
@@ -70,44 +71,44 @@ pub fn build(b: *std.Build) !void {
     const cpu_arch = target.result.cpu.arch;
     const os_tag = target.result.os.tag;
 
-    var FLAGS = std.ArrayList([]const u8).init(b.allocator);
-    var C_SOURCES = std.ArrayList([]const u8).init(b.allocator);
+    var FLAGS: std.ArrayList([]const u8) = .empty;
+    var C_SOURCES: std.ArrayList([]const u8) = .empty;
 
-    try FLAGS.append("-Wall");
-    try FLAGS.append("-fno-strict-aliasing");
-    try FLAGS.append("-fno-sanitize=undefined");
-    try FLAGS.append("-O3");
+    try FLAGS.append(b.allocator, "-Wall");
+    try FLAGS.append(b.allocator, "-fno-strict-aliasing");
+    try FLAGS.append(b.allocator, "-fno-sanitize=undefined");
+    try FLAGS.append(b.allocator, "-O3");
 
-    try FLAGS.append("-DCONFIG_TCC_PREDEFS");
-    try FLAGS.append("-DONE_SOURCE=0");
-    try FLAGS.append("-DTCC_LIBTCC1=\"\\0\"");
+    try FLAGS.append(b.allocator, "-DCONFIG_TCC_PREDEFS");
+    try FLAGS.append(b.allocator, "-DONE_SOURCE=0");
+    try FLAGS.append(b.allocator, "-DTCC_LIBTCC1=\"\\0\"");
 
     if (!CONFIG_TCC_BCHECK)
-        try FLAGS.append("-DCONFIG_TCC_BCHECK=0");
+        try FLAGS.append(b.allocator, "-DCONFIG_TCC_BCHECK=0");
     if (!CONFIG_TCC_BACKTRACE)
-        try FLAGS.append("-DCONFIG_TCC_BACKTRACE=0");
+        try FLAGS.append(b.allocator, "-DCONFIG_TCC_BACKTRACE=0");
     if (CONFIG_MEM_DEBUG)
-        try FLAGS.append("-DMEM_DEBUG=2");
+        try FLAGS.append(b.allocator, "-DMEM_DEBUG=2");
 
     for (SOURCES) |file|
-        try C_SOURCES.append(file);
+        try C_SOURCES.append(b.allocator, file);
 
     switch (cpu_arch) {
         .x86_64 => {
             for (X86_64_SOURCES) |file|
-                try C_SOURCES.append(file);
+                try C_SOURCES.append(b.allocator, file);
         },
         .arm => {
             for (ARM_SOURCES) |file|
-                try C_SOURCES.append(file);
+                try C_SOURCES.append(b.allocator, file);
         },
         .aarch64 => {
             for (AARCH64_SOURCES) |file|
-                try C_SOURCES.append(file);
+                try C_SOURCES.append(b.allocator, file);
         },
         .riscv64 => {
             for (RISCV64_SOURCES) |file|
-                try C_SOURCES.append(file);
+                try C_SOURCES.append(b.allocator, file);
         },
         else => unreachable,
     }
@@ -115,11 +116,11 @@ pub fn build(b: *std.Build) !void {
     switch (os_tag) {
         .windows => {
             for (WINDOWS_SOURCES) |file|
-                try C_SOURCES.append(file);
+                try C_SOURCES.append(b.allocator, file);
         },
         .macos => {
             for (MACOS_SOURCES) |file|
-                try C_SOURCES.append(file);
+                try C_SOURCES.append(b.allocator, file);
         },
         .linux => {},
         .dragonfly, .freebsd, .netbsd, .openbsd => {},
@@ -127,32 +128,32 @@ pub fn build(b: *std.Build) !void {
     }
 
     switch (cpu_arch) {
-        .x86_64 => try FLAGS.append("-DTCC_TARGET_X86_64"),
-        .arm => try FLAGS.append("-DTCC_TARGET_ARM"),
-        .aarch64 => try FLAGS.append("-DTCC_TARGET_ARM64"),
-        .riscv64 => try FLAGS.append("-TCC_TARGET_RISCV64"),
+        .x86_64 => try FLAGS.append(b.allocator, "-DTCC_TARGET_X86_64"),
+        .arm => try FLAGS.append(b.allocator, "-DTCC_TARGET_ARM"),
+        .aarch64 => try FLAGS.append(b.allocator, "-DTCC_TARGET_ARM64"),
+        .riscv64 => try FLAGS.append(b.allocator, "-TCC_TARGET_RISCV64"),
         else => unreachable,
     }
 
     switch (os_tag) {
         .windows => {
-            try FLAGS.append("-DTCC_TARGET_PE");
-            try FLAGS.append("-DCONFIG_WIN32");
-            try FLAGS.append("-D_STDDEF_H");
+            try FLAGS.append(b.allocator, "-DTCC_TARGET_PE");
+            try FLAGS.append(b.allocator, "-DCONFIG_WIN32");
+            try FLAGS.append(b.allocator, "-D_STDDEF_H");
         },
         .macos => {
-            try FLAGS.append("-DTCC_TARGET_MACHO");
-            try FLAGS.append("-DCONFIG_CODESIGN");
-            try FLAGS.append("-DCONFIG_NEW_MACHO");
+            try FLAGS.append(b.allocator, "-DTCC_TARGET_MACHO");
+            try FLAGS.append(b.allocator, "-DCONFIG_CODESIGN");
+            try FLAGS.append(b.allocator, "-DCONFIG_NEW_MACHO");
         },
         .linux => {
             if (target.result.abi == .musl)
-                try FLAGS.append("-DCONFIG_TCC_MUSL");
+                try FLAGS.append(b.allocator, "-DCONFIG_TCC_MUSL");
         },
-        .dragonfly => try FLAGS.append("-DTARGETOS_DragonFly"),
-        .freebsd => try FLAGS.append("-DTARGETOS_FreeBSD"),
-        .netbsd => try FLAGS.append("-DTARGETOS_NetBSD"),
-        .openbsd => try FLAGS.append("-DTARGETOS_OpenBSD"),
+        .dragonfly => try FLAGS.append(b.allocator, "-DTARGETOS_DragonFly"),
+        .freebsd => try FLAGS.append(b.allocator, "-DTARGETOS_FreeBSD"),
+        .netbsd => try FLAGS.append(b.allocator, "-DTARGETOS_NetBSD"),
+        .openbsd => try FLAGS.append(b.allocator, "-DTARGETOS_OpenBSD"),
         else => unreachable,
     }
 
@@ -177,6 +178,7 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = optimize,
         }),
+        .use_llvm = true, // fails to link without LLVM
     });
     unit_tests.linkLibrary(lib);
 
