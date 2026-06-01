@@ -1,10 +1,11 @@
 .{
     .name = .tinycc,
     .version = "0.0.3",
+    .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .tinycc = .{
-            .url = "https://codeload.github.com/TinyCC/tinycc/tar.gz/6ca228339cbae14203b255e3e27f56586d2b10dc",
-            .hash = "N-V-__8AAEJGQAA0ZAst0wi989aQgguE0Xc5CygWHV7Npz1Q",
+            .url = "git+https://github.com/TinyCC/tinycc#44977b0de8400825d143bcc47b12383acb86cb6f",
+            .hash = "N-V-__8AAHpGRAD9axNSIDavslfTxGS9CHmnYk3YFLwksHjG",
         },
     },
     .paths = .{
