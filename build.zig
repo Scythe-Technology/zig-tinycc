@@ -30,19 +30,22 @@ pub fn build(b: *std.Build) !void {
 
     const c2str_step = b.step("config-tcc", "Generate tccdefs_.h");
     {
-        const c2str_exe = b.addExecutable(.{
-            .name = "config-tcc",
-            .root_module = b.createModule(.{
-                .target = build_native_target,
-                .optimize = .Debug,
-            }),
+        const c2str_mod = b.createModule(.{
+            .target = build_native_target,
+            .optimize = .Debug,
+            .link_libc = true,
         });
 
-        c2str_exe.linkLibC();
-        c2str_exe.addCSourceFile(.{
+        c2str_mod.addCSourceFile(.{
             .file = b.path("config/conftest.c"),
             .flags = &.{"-DC2STR"},
         });
+
+        const c2str_exe = b.addExecutable(.{
+            .name = "config-tcc",
+            .root_module = c2str_mod,
+        });
+        //6ca228339cbae14203b255e3e27f56586d2b10dc
 
         const run_exe = b.addRunArtifact(c2str_exe);
 
@@ -52,19 +55,22 @@ pub fn build(b: *std.Build) !void {
         c2str_step.dependOn(&run_exe.step);
     }
 
+    const mod = b.addModule("root", .{
+        .root_source_file = b.path("src/lib.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+
     const lib = b.addLibrary(.{
         .name = "libtinycc",
         .linkage = .static,
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-        }),
+        .root_module = mod,
         .use_llvm = true, // fails to link without LLVM
     });
-    lib.linkLibC();
-    lib.addIncludePath(b.path("src/config"));
-    lib.addIncludePath(tcc_dep.path("."));
-    lib.addIncludePath(tcc_dep.path("include"));
+    mod.addIncludePath(b.path("src/config"));
+    mod.addIncludePath(tcc_dep.path("."));
+    mod.addIncludePath(tcc_dep.path("include"));
 
     lib.step.dependOn(c2str_step);
 
@@ -157,30 +163,18 @@ pub fn build(b: *std.Build) !void {
         else => unreachable,
     }
 
-    lib.addCSourceFiles(.{
+    mod.addCSourceFiles(.{
         .root = tcc_dep.path(""),
         .files = C_SOURCES.items,
         .flags = FLAGS.items,
     });
 
-    const module = b.addModule("tinycc", .{
-        .root_source_file = b.path("src/lib.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    module.linkLibrary(lib);
-
     b.installArtifact(lib);
 
     const unit_tests = b.addTest(.{
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/lib.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
+        .root_module = mod,
         .use_llvm = true, // fails to link without LLVM
     });
-    unit_tests.linkLibrary(lib);
 
     b.installArtifact(unit_tests);
 
