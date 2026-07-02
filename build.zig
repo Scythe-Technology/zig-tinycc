@@ -55,6 +55,8 @@ pub fn build(b: *std.Build) !void {
         c2str_step.dependOn(&run_exe.step);
     }
 
+    b.default_step.dependOn(c2str_step);
+
     const mod = b.addModule("root", .{
         .root_source_file = b.path("src/lib.zig"),
         .target = target,
@@ -62,15 +64,16 @@ pub fn build(b: *std.Build) !void {
         .link_libc = true,
     });
 
+    mod.addIncludePath(b.path("src/config"));
+    mod.addIncludePath(tcc_dep.path("."));
+    mod.addIncludePath(tcc_dep.path("include"));
+
     const lib = b.addLibrary(.{
         .name = "libtinycc",
         .linkage = .static,
         .root_module = mod,
         .use_llvm = true, // fails to link without LLVM
     });
-    mod.addIncludePath(b.path("src/config"));
-    mod.addIncludePath(tcc_dep.path("."));
-    mod.addIncludePath(tcc_dep.path("include"));
 
     lib.step.dependOn(c2str_step);
 

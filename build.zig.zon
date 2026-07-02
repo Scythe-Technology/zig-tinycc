@@ -1,7 +1,7 @@
 .{
     .name = .tinycc,
     .version = "0.1.0",
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.15.2",
     .dependencies = .{
         .tinycc = .{
             .url = "git+https://github.com/TinyCC/tinycc#44977b0de8400825d143bcc47b12383acb86cb6f",
