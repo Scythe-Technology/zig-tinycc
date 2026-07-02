@@ -179,6 +179,8 @@ pub fn build(b: *std.Build) !void {
         .use_llvm = true, // fails to link without LLVM
     });
 
+    unit_tests.step.dependOn(c2str_step);
+
     b.installArtifact(unit_tests);
 
     const run_unit_tests = b.addRunArtifact(unit_tests);
